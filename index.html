@@ -92,12 +92,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.2rem;}
 .trend-sem{display:flex;align-items:flex-end;gap:6px;height:68px;}
 .trend-mes{display:flex;align-items:flex-end;gap:2px;height:72px;overflow:hidden;}
-.t-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.t-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;}
 .t-bar{width:100%;border-radius:4px;}
 .t-val{font-size:9px;color:var(--text-muted);}
 .t-day{font-size:9px;color:var(--text-hint);}
 .t-day.hoje-lbl{color:var(--gold);font-weight:700;}
-.tm-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;}
+.tm-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;position:relative;}
 .tm-bar{width:100%;border-radius:2px;}
 .tm-val{font-size:7px;color:var(--text-muted);}
 .tm-day{font-size:7px;color:var(--text-hint);}
@@ -200,6 +200,17 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .sug-enviado{text-align:center;padding:1.5rem 0;}
 .sug-enviado i{font-size:32px;color:var(--ok-text);margin-bottom:10px;display:block;}
 .sug-enviado p{font-size:13px;color:var(--text-muted);}
+
+.t-col{position:relative;}
+.tm-col{position:relative;}
+.t-tooltip,.tm-tooltip{
+  display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);
+  background:rgba(30,30,28,0.95);border:1px solid var(--border);border-radius:6px;
+  padding:3px 8px;font-size:10px;font-weight:600;color:var(--text);white-space:nowrap;
+  pointer-events:none;z-index:10;
+}
+.t-col:hover .t-tooltip,.tm-col:hover .tm-tooltip{display:block;}
+
 </style>
 </head>
 <body>
@@ -356,7 +367,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbxdYXfyKvMGvsdpXNNf0fWnhc4GtCfpmFPhgv17SnJ-_qm2naHRQqZmWyNJ8GTy8NjXvg/exec';
+const API_URL = 'COLE_AQUI_A_URL_DO_APPS_SCRIPT';
 // ─────────────────────────────────────────────────────────────
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -401,7 +412,7 @@ async function fazerLogin() {
     const res  = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&senha=${encodeURIComponent(senha)}`);
     const json = await res.json();
     if (!json.ok) { setLoginLoading(false); showLoginError('Usuário ou senha incorretos.'); document.getElementById('input-senha').value = ''; return; }
-    usuarioLogado = { ...json.usuario, senha: senha };
+    usuarioLogado = json.usuario;
     setLoginLoading(false);
     document.getElementById('login-screen').style.display = 'none';
     await carregarPainel();
@@ -458,7 +469,7 @@ async function fetchDados() {
   const key = `${usuarioLogado.slug}_${periodo}_${mesAtual}`;
   if (dadosCache[key]) return dadosCache[key];
   setLoadingTxt('Buscando seus dados...');
-  const url = `${API_URL}?action=dados&usuario=${usuarioLogado.slug}&senha=${usuarioLogado.senha}&periodo=${periodo}&mes=${mesAtual}&ano=${anoHoje}`;
+  const url = `${API_URL}?action=dados&usuario=${usuarioLogado.slug}&periodo=${periodo}&mes=${mesAtual}&ano=${anoHoje}`;
   const res  = await fetch(url);
   if (!res.ok) throw new Error('Erro HTTP ' + res.status);
   const json = await res.json();
@@ -544,11 +555,11 @@ function renderBarsSem(id, dados, meta, cOk, cBad, inv) {
   if (!vals.length) { document.getElementById(id).innerHTML='<div style="font-size:11px;color:var(--text-hint);padding:1rem 0">Sem dados esta semana.</div>'; return; }
   const max=inv?100:Math.max(...vals)*1.12, min=inv?Math.min(...vals)*.97:0, rng=max-min;
   document.getElementById(id).innerHTML = dados.map(item => {
-    if (item.val===null) return `<div class="t-col"><div class="t-val">—</div><div class="t-bar" style="height:4px;background:var(--surface2)"></div><div class="t-day">${item.dia}</div></div>`;
+    if (item.val===null) return `<div class="t-col"><span class="t-tooltip">${v}${inv?' %':' min'}</span><div class="t-val">—</div><div class="t-bar" style="height:4px;background:var(--surface2)"></div><div class="t-day">${item.dia}</div></div>`;
     const v=item.val, ok=inv?v>=meta:v<=meta, h=Math.round(((v-min)/rng)*58);
     const isH=item.dia===nomeDiaHoje&&mesAtual===mesHoje;
     const cor=isH?'var(--gold)':(ok?cOk:cBad);
-    return `<div class="t-col"><div class="t-val" style="${isH?'color:var(--gold);font-weight:700':''}">${v}</div><div class="t-bar" style="height:${Math.max(h,6)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="t-day ${isH?'hoje-lbl':''}">${item.dia}${isH?' ●':''}</div></div>`;
+    return `<div class="t-col"><span class="t-tooltip">${v}${inv?' %':' min'}</span><div class="t-val" style="${isH?'color:var(--gold);font-weight:700':''}">${v}</div><div class="t-bar" style="height:${Math.max(h,6)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="t-day ${isH?'hoje-lbl':''}">${item.dia}${isH?' ●':''}</div></div>`;
   }).join('');
 }
 
@@ -561,7 +572,7 @@ function renderBarsMes(id, dados, meta, cOk, cBad, inv) {
     if (item.val===null) return `<div class="tm-col"><div class="tm-bar" style="height:3px;background:transparent"></div><div class="tm-day ${isH?'hoje-lbl':''}">${item.dia}</div></div>`;
     const v=item.val, ok=inv?v>=meta:v<=meta, h=Math.round(((v-min)/rng)*62);
     const cor=isH?'var(--gold)':(ok?cOk:cBad);
-    return `<div class="tm-col"><div class="tm-val" style="${isH?'color:var(--gold);font-weight:700':''}">${v}</div><div class="tm-bar" style="height:${Math.max(h,4)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="tm-day ${isH?'hoje-lbl':''}">${item.dia}${isH?'●':''}</div></div>`;
+    return `<div class="tm-col"><span class="tm-tooltip">${v}${inv?' %':' min'}</span><div class="tm-val" style="${isH?'color:var(--gold);font-weight:700':''}">${v}</div><div class="tm-bar" style="height:${Math.max(h,4)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="tm-day ${isH?'hoje-lbl':''}">${item.dia}${isH?'●':''}</div></div>`;
   }).join('');
 }
 
