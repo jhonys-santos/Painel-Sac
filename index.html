@@ -488,7 +488,7 @@ async function fazerLogin() {
     const res  = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&senha=${encodeURIComponent(senha)}`);
     const json = await res.json();
     if (!json.ok) { setLoginLoading(false); showLoginError('Usuário ou senha incorretos.'); document.getElementById('input-senha').value = ''; return; }
-    usuarioLogado = json.usuario;
+    usuarioLogado = { ...json.usuario, senha: senha };
     setLoginLoading(false);
     document.getElementById('login-screen').style.display = 'none';
     await carregarPainel();
@@ -545,7 +545,7 @@ async function fetchDados() {
   const key = `${usuarioLogado.slug}_${periodo}_${mesAtual}`;
   if (dadosCache[key]) return dadosCache[key];
   setLoadingTxt('Buscando seus dados...');
-  const url = `${API_URL}?action=dados&usuario=${usuarioLogado.slug}&periodo=${periodo}&mes=${mesAtual}&ano=${anoHoje}`;
+  const url = `${API_URL}?action=dados&usuario=${usuarioLogado.slug}&senha=${usuarioLogado.senha}&periodo=${periodo}&mes=${mesAtual}&ano=${anoHoje}`;
   const res  = await fetch(url);
   if (!res.ok) throw new Error('Erro HTTP ' + res.status);
   const json = await res.json();
