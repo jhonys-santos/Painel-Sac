@@ -488,7 +488,7 @@ async function fazerLogin() {
     const res  = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&senha=${encodeURIComponent(senha)}`);
     const json = await res.json();
     if (!json.ok) { setLoginLoading(false); showLoginError('Usuário ou senha incorretos.'); document.getElementById('input-senha').value = ''; return; }
-    usuarioLogado = { ...json.usuario, senha: senha };
+    usuarioLogado = json.usuario;
     setLoginLoading(false);
     document.getElementById('login-screen').style.display = 'none';
     await carregarPainel();
@@ -542,10 +542,21 @@ async function carregarPainel() {
 }
 
 async function fetchDados() {
-  const key = `${usuarioLogado.slug}_${periodo}_${mesAtual}`;
+  // Calcula range exato da semana selecionada
+  let semIni = '', semFim = '';
+  if (periodo === 'semana') {
+    const semanas = semanasDoMes(mesAtual, anoHoje);
+    const idx = Math.min(semanaIdx, semanas.length - 1);
+    const s   = semanas[idx];
+    const fmt = d => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+    semIni = fmt(s.inicio);
+    semFim = fmt(s.fim);
+  }
+  const key = `${usuarioLogado.slug}_${periodo}_${mesAtual}_${semanaIdx}`;
   if (dadosCache[key]) return dadosCache[key];
   setLoadingTxt('Buscando seus dados...');
-  const url = `${API_URL}?action=dados&usuario=${usuarioLogado.slug}&senha=${usuarioLogado.senha}&periodo=${periodo}&mes=${mesAtual}&ano=${anoHoje}`;
+  let url = `${API_URL}?action=dados&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}&periodo=${periodo}&mes=${mesAtual}&ano=${anoHoje}`;
+  if (semIni) url += `&sem_ini=${encodeURIComponent(semIni)}&sem_fim=${encodeURIComponent(semFim)}`;
   const res  = await fetch(url);
   if (!res.ok) throw new Error('Erro HTTP ' + res.status);
   const json = await res.json();
@@ -626,29 +637,72 @@ function renderEvolucao(tmaDados, csatDados) {
   }
 }
 
+function calcTrend(dados) {
+  const pontos = dados.map((d,i) => d.val!==null ? {x:i,y:d.val} : null).filter(Boolean);
+  if (pontos.length < 2) return null;
+  const n=pontos.length, sx=pontos.reduce((a,p)=>a+p.x,0), sy=pontos.reduce((a,p)=>a+p.y,0);
+  const sxy=pontos.reduce((a,p)=>a+p.x*p.y,0), sxx=pontos.reduce((a,p)=>a+p.x*p.x,0);
+  const denom = n*sxx - sx*sx;
+  if (!denom) return null;
+  const m2=(n*sxy-sx*sy)/denom, b2=(sy-m2*sx)/n;
+  return x => m2*x + b2;
+}
+
+function drawTrendLine(cont, dados, min, rng, barH) {
+  const trendFn = calcTrend(dados);
+  if (!trendFn) return;
+  setTimeout(() => {
+    const cols = cont.querySelectorAll('.t-col');
+    if (!cols.length) return;
+    const cW = cols[0].offsetWidth || 20;
+    const cH = cont.offsetHeight  || barH + 20;
+    const pts = dados.map((item,i) => {
+      const yVal = trendFn(i);
+      const xPx  = i * cW + cW / 2;
+      const yPx  = cH - Math.round(((yVal - min) / (rng||1)) * barH) - 14;
+      return xPx + ',' + Math.max(2, Math.min(cH - 2, yPx));
+    });
+    const svg  = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    line.setAttribute('points', pts.join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-dasharray', '4 3');
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+    cont.style.position = 'relative';
+    cont.appendChild(svg);
+  }, 60);
+}
+
 function renderBarsSem(id, dados, meta, cOk, cBad, inv) {
   const vals = dados.filter(d=>d.val!==null).map(d=>d.val);
   if (!vals.length) { document.getElementById(id).innerHTML='<div style="font-size:11px;color:var(--text-hint);padding:1rem 0">Sem dados esta semana.</div>'; return; }
-  const max=inv?100:Math.max(...vals)*1.12, min=inv?Math.min(...vals)*.97:0, rng=max-min;
-  document.getElementById(id).innerHTML = dados.map(item => {
-    if (item.val===null) return `<div class="t-col"><span class="t-tooltip">${v}${inv?' %':' min'}</span><div class="t-val">—</div><div class="t-bar" style="height:4px;background:var(--surface2)"></div><div class="t-day">${item.dia}</div></div>`;
+  const max=inv?100:Math.max(...vals)*1.12, min=inv?Math.min(...vals)*.97:0, rng=(max-min)||1;
+  const cont = document.getElementById(id);
+  cont.innerHTML = dados.map(item => {
+    if (item.val===null) return '<div class="t-col"><div class="t-val">—</div><div class="t-bar" style="height:4px;background:var(--surface2)"></div><div class="t-day">' + item.dia + '</div></div>';
     const v=item.val, ok=inv?v>=meta:v<=meta, h=Math.round(((v-min)/rng)*58);
     const isH=item.dia===nomeDiaHoje&&mesAtual===mesHoje;
     const cor=isH?'var(--gold)':(ok?cOk:cBad);
-    return `<div class="t-col"><span class="t-tooltip">${v}${inv?' %':' min'}</span><div class="t-val" style="${isH?'color:var(--gold);font-weight:700':''}">${v}</div><div class="t-bar" style="height:${Math.max(h,6)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="t-day ${isH?'hoje-lbl':''}">${item.dia}${isH?' ●':''}</div></div>`;
+    return '<div class="t-col"><span class="t-tooltip">' + v + (inv?' %':' min') + '</span><div class="t-val" style="' + (isH?'color:var(--gold);font-weight:700':'') + '">' + v + '</div><div class="t-bar" style="height:' + Math.max(h,6) + 'px;background:' + cor + ';' + (isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'') + '"></div><div class="t-day ' + (isH?'hoje-lbl':'') + '">' + item.dia + (isH?' ●':'') + '</div></div>';
   }).join('');
+  drawTrendLine(cont, dados, min, rng, 58);
 }
 
 function renderBarsMes(id, dados, meta, cOk, cBad, inv) {
   const vals = dados.filter(d=>d.val!==null).map(d=>d.val);
   if (!vals.length) { document.getElementById(id).innerHTML='<div style="font-size:11px;color:var(--text-hint);padding:1rem 0">Sem dados este mês.</div>'; return; }
-  const max=inv?100:Math.max(...vals)*1.12, min=inv?Math.min(...vals)*.97:0, rng=max-min;
-  document.getElementById(id).innerHTML = dados.map(item => {
+  const max=inv?100:Math.max(...vals)*1.12, min=inv?Math.min(...vals)*.97:0, rng=(max-min)||1;
+  const cont = document.getElementById(id);
+  cont.innerHTML = dados.map(item => {
     const isH=item.dia===diaHoje&&mesAtual===mesHoje;
-    if (item.val===null) return `<div class="tm-col"><div class="tm-bar" style="height:3px;background:transparent"></div><div class="tm-day ${isH?'hoje-lbl':''}">${item.dia}</div></div>`;
+    if (item.val===null) return '<div class="tm-col"><div class="tm-bar" style="height:3px;background:transparent"></div><div class="tm-day ' + (isH?'hoje-lbl':'') + '">' + item.dia + '</div></div>';
     const v=item.val, ok=inv?v>=meta:v<=meta, h=Math.round(((v-min)/rng)*62);
     const cor=isH?'var(--gold)':(ok?cOk:cBad);
-    return `<div class="tm-col"><span class="tm-tooltip">${v}${inv?' %':' min'}</span><div class="tm-val" style="${isH?'color:var(--gold);font-weight:700':''}">${v}</div><div class="tm-bar" style="height:${Math.max(h,4)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="tm-day ${isH?'hoje-lbl':''}">${item.dia}${isH?'●':''}</div></div>`;
+    return '<div class="tm-col"><span class="tm-tooltip">' + v + (inv?' %':' min') + '</span><div class="tm-val" style="' + (isH?'color:var(--gold);font-weight:700':'') + '">' + v + '</div><div class="tm-bar" style="height:' + Math.max(h,4) + 'px;background:' + cor + ';' + (isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'') + '"></div><div class="tm-day ' + (isH?'hoje-lbl':'') + '">' + item.dia + (isH?'●':'') + '</div></div>';
   }).join('');
 }
 
@@ -663,10 +717,14 @@ function renderPico(pico) {
       <div class="pico-info"><strong>${pk.v} atendimentos</strong> no dia ${pk.n} — maior do mês.</div></div>`;
   } else {
     const maxV=Math.max(...pico.map(d=>d.v),1), pk=pico.reduce((a,b)=>b.v>a.v?b:a,pico[0]);
-    document.getElementById('pico-card').innerHTML=`<div class="pico-inner">
-      <div class="pico-hl"><div class="pico-day">${pk.d}</div><div class="pico-sub">maior pico</div></div>
-      <div class="pico-bars">${pico.map(d=>{const isH=d.d===nomeDiaHoje&&mesAtual===mesHoje;const h=Math.round((d.v/maxV)*46);const cor=isH?'var(--gold)':d.d===pk.d?'rgba(245,195,0,.65)':'rgba(245,195,0,.2)';return `<div class="pc-col"><div class="pc-val">${d.v}</div><div class="pc-bar" style="height:${Math.max(h,4)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="pc-lbl" style="${isH?'color:var(--gold);font-weight:700':''}">${d.d}${isH?' ●':''}</div></div>`;}).join('')}</div>
-      <div class="pico-info"><strong>${pk.v} atendimentos</strong> na ${pk.d}feira — maior da semana.</div></div>`;
+    const picoCard = document.getElementById('pico-card');
+    picoCard.innerHTML='<div class="pico-inner"><div class="pico-hl"><div class="pico-day">' + pk.d + '</div><div class="pico-sub">maior pico</div></div><div class="pico-bars" id="pico-bars-sem">' + pico.map(d=>{const isH=d.d===nomeDiaHoje&&mesAtual===mesHoje;const h=Math.round((d.v/maxV)*46);const cor=isH?'var(--gold)':d.d===pk.d?'rgba(245,195,0,.65)':'rgba(245,195,0,.2)';return '<div class="pc-col"><span class="t-tooltip">'+d.v+' at.</span><div class="pc-val">'+d.v+'</div><div class="pc-bar" style="height:'+Math.max(h,4)+'px;background:'+cor+';'+(isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'')+'"></div><div class="pc-lbl" style="'+(isH?'color:var(--gold);font-weight:700':'')+'">'+d.d+(isH?' ●':'')+'</div></div>';}).join('') + '</div><div class="pico-info"><strong>' + pk.v + ' atendimentos</strong> na ' + pk.d + 'feira — maior da semana.</div></div>';
+    const picoBarsCont = document.getElementById('pico-bars-sem');
+    if (picoBarsCont) {
+      const dadosTrend = pico.map(d => ({val: d.v > 0 ? d.v : null}));
+      const minP=0, maxP=maxV*1.1, rngP=(maxP-minP)||1;
+      drawTrendLine(picoBarsCont, dadosTrend, minP, rngP, 46);
+    }
   }
 }
 
