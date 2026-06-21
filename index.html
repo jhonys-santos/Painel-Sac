@@ -216,6 +216,35 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .week-select-wrap.show{display:flex;}
 .week-select{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:11px;font-weight:600;padding:7px 32px 7px 14px;font-family:inherit;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;max-width:200px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A8A84' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
 
+
+/* ── RV ── */
+.rv-card{background:var(--surface);border:1px solid var(--gold-dark);border-radius:var(--r);padding:1.25rem;margin-bottom:1.5rem;}
+.rv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:8px;}
+.rv-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.rv-total{text-align:right;}
+.rv-total-val{font-size:24px;font-weight:700;color:var(--gold);line-height:1;}
+.rv-total-max{font-size:10px;color:var(--text-hint);margin-top:2px;}
+.rv-progress{background:var(--surface2);border-radius:4px;height:6px;width:100%;margin-bottom:1.1rem;overflow:hidden;}
+.rv-progress-fill{height:6px;border-radius:4px;background:var(--gold);transition:width .4s ease;}
+.rv-items{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:500px){.rv-items{grid-template-columns:1fr;}}
+.rv-item{background:var(--surface2);border-radius:var(--rs);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid transparent;transition:border-color .15s;}
+.rv-item.ok{border-color:rgba(61,175,114,0.3);}
+.rv-item.bad{border-color:rgba(212,75,75,0.15);}
+.rv-item.warn{border-color:rgba(212,150,40,0.3);}
+.rv-item-left{flex:1;min-width:0;}
+.rv-item-lbl{font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:3px;}
+.rv-item-val{font-size:12px;color:var(--text);font-weight:500;}
+.rv-item-val span{font-size:10px;color:var(--text-hint);margin-left:4px;}
+.rv-item-prize{font-size:16px;font-weight:700;line-height:1;white-space:nowrap;}
+.rv-item-prize.ok{color:var(--ok-text);}
+.rv-item-prize.bad{color:var(--text-hint);}
+.rv-item-prize.warn{color:var(--warn-text);}
+.rv-item-status{font-size:9px;font-weight:700;margin-top:2px;text-align:right;}
+.rv-item-status.ok{color:var(--ok-text);}
+.rv-item-status.bad{color:var(--bad-text);}
+.rv-item-status.warn{color:var(--warn-text);}
+
 </style>
 </head>
 <body>
@@ -349,22 +378,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   <div class="audit-card" id="audit-block"></div>
   <div class="slabel" id="detrat-label">Insatisfeitos · CSAT</div>
   <div class="detrat-card" id="detrat-block"></div>
-  <div class="two-col">
-    <div class="card">
-      <div class="slabel" id="escala-title">Escala de serviço</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px" id="escala-horario">08:00 às 18:00 · 5×2</div>
-      <div class="esc-hdr" id="esc-hdr"></div>
-      <div class="esc-grid" id="esc-grid"></div>
-      <div class="esc-legend">
-        <div class="leg"><div class="leg-dot" style="background:rgba(61,175,114,0.3);border:1px solid #3DAF72"></div><span class="leg-lbl">Trabalha</span></div>
-        <div class="leg"><div class="leg-dot" style="background:rgba(212,75,75,0.3);border:1px solid #D44B4B"></div><span class="leg-lbl">Folga</span></div>
-        <div class="leg"><div class="leg-dot" style="background:rgba(212,150,40,0.3);border:1px solid #D49628"></div><span class="leg-lbl">Feriado</span></div>
-        <div class="leg"><div class="leg-dot" style="background:rgba(80,140,220,0.3);border:1px solid #3A7BD5"></div><span class="leg-lbl">Férias/Troca</span></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="slabel">Agenda · próximos eventos</div>
-      <div id="agenda"></div>
+  <div class="slabel" id="rv-label" style="display:none">Remuneração variável · mês</div>
+  <div class="rv-card" id="rv-block" style="display:none"></div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="slabel" id="escala-title">Escala de serviço</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px" id="escala-horario">08:00 às 18:00 · 5×2</div>
+    <div class="esc-hdr" id="esc-hdr"></div>
+    <div class="esc-grid" id="esc-grid"></div>
+    <div class="esc-legend">
+      <div class="leg"><div class="leg-dot" style="background:rgba(61,175,114,0.3);border:1px solid #3DAF72"></div><span class="leg-lbl">Trabalha</span></div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(212,75,75,0.3);border:1px solid #D44B4B"></div><span class="leg-lbl">Folga</span></div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(212,150,40,0.3);border:1px solid #D49628"></div><span class="leg-lbl">Feriado</span></div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(80,140,220,0.3);border:1px solid #3A7BD5"></div><span class="leg-lbl">Férias/Troca</span></div>
     </div>
   </div>
 </div>
@@ -604,7 +629,7 @@ function renderTudo(dados) {
   renderAudit(ind.audit||{pct:0,ok:0,total:0});
   renderDetratores(ind.insatisfeitos||[]);
   renderEscala(dados.escala||[]);
-  renderAgenda(dados.agenda||[]);
+  renderRV(dados.indicadores||{});
 }
 
 function renderEvolucao(tmaDados, csatDados) {
@@ -791,10 +816,143 @@ function renderEscala(escala) {
   document.getElementById('esc-grid').innerHTML=html;
 }
 
-function renderAgenda(agenda) {
-  const el=document.getElementById('agenda');
-  if (!(agenda||[]).length) { el.innerHTML='<div style="font-size:12px;color:var(--text-hint);padding:8px 0">Nenhum evento próximo.</div>'; return; }
-  el.innerHTML=agenda.map(a=>`<div class="ag-item"><div class="ag-dot" style="background:${a.cor||'#F5C300'}"></div><div><div class="ag-title">${a.titulo}</div><div class="ag-date"><i class="ti ti-calendar" style="font-size:11px;vertical-align:-1px"></i> ${a.data}</div></div></div>`).join('');
+function renderRV(ind) {
+  const label = document.getElementById('rv-label');
+  const block = document.getElementById('rv-block');
+  if (periodo !== 'mes' || !usuarioLogado) {
+    label.style.display = 'none'; block.style.display = 'none'; return;
+  }
+  label.style.display = 'block'; block.style.display = 'block';
+
+  const slug = usuarioLogado.slug;
+
+  if (slug === 'daniel') { renderRV_Daniel(ind, block); return; }
+  if (slug === 'gabrielle') { renderRV_Gabrielle(ind, block); return; }
+  if (usuarioLogado.tipo === 'sac') { renderRV_SAC(ind, block); return; }
+  // PPF sem tabela definida
+  block.innerHTML = '<div style="font-size:12px;color:var(--text-hint);padding:1rem">RV não configurada.</div>';
+}
+
+// ── RV SAC (Nathalia, Francis, Iasmin) ───────────────────────
+// TMA <15→R$150 | 15-30→R$100 | >30→R$0
+// CSAT >95%→R$75 | Auditoria >90%→R$50 | TMR Refab <84h→R$50 | Máx R$325
+function renderRV_SAC(ind, block) {
+  const tma      = ind.tma       || 0;
+  const csat     = ind.csat      || 0;
+  const tmrRefab = ind.tmr_refab || 0;
+  const auditPct = (ind.audit || {}).pct || 0;
+
+  let tmaVal = 0, tmaS = 'bad', tmaLbl = tma > 0 ? tma + ' min' : 'Sem dados';
+  if (tma > 0 && tma < 15)        { tmaVal = 150; tmaS = 'ok';   tmaLbl = tma + ' min  (< 15 min)'; }
+  else if (tma >= 15 && tma <= 30){ tmaVal = 100; tmaS = 'warn'; tmaLbl = tma + ' min  (15–30 min)'; }
+  else if (tma > 30)              { tmaVal = 0;   tmaS = 'bad';  tmaLbl = tma + ' min  (> 30 min)'; }
+
+  let csatVal = 0, csatS = csat > 95 ? 'ok' : 'bad';
+  if (csat > 95) csatVal = 75;
+
+  let audVal = 0, audS = auditPct > 90 ? 'ok' : (auditPct > 0 ? 'bad' : 'bad');
+  const audLbl = auditPct > 0 ? auditPct + '%' : 'Sem avaliação';
+  if (auditPct > 90) audVal = 50;
+
+  let tmrVal = 0, tmrS = 'bad';
+  const tmrLbl = tmrRefab > 0 ? tmrRefab + ' min' : 'Sem dados';
+  if (tmrRefab > 0 && tmrRefab <= 84 * 60) { tmrVal = 50; tmrS = 'ok'; }
+  else if (tmrRefab > 84 * 60) tmrS = 'bad';
+
+  const total = tmaVal + csatVal + audVal + tmrVal;
+  const max   = 325;
+  rvRender(block, total, max, MESES[mesAtual], [
+    rvItem('TMA',        tmaLbl,                        tmaVal,  tmaS,  'Meta: < 30 min'),
+    rvItem('CSAT',       csat + '%',                    csatVal, csatS, 'Meta: > 95%'),
+    rvItem('Auditoria',  audLbl,                        audVal,  audS,  'Meta: > 90%'),
+    rvItem('TMR Refab.', tmrLbl,                        tmrVal,  tmrS,  'Meta: < 84h'),
+  ]);
+}
+
+// ── RV Daniel — Auxiliar Adm. ─────────────────────────────────
+// TMA Aprovação Logo <30min→R$50 | CSAT >95%→R$75 | TMT Pedidos Atrasados <24h→R$150 | Máx R$275
+// Na planilha PPF: tmr_ppf = TMT Pedidos Atrasados
+function renderRV_Daniel(ind, block) {
+  const tmrPPF = ind.tmr_ppf || 0; // TMT Pedidos Atrasados
+  const csat   = ind.csat    || 0; // CSAT vem do Apps Script? PPF não tem CSAT — mostrar 0
+  // TMA Aprovação: Daniel usa o campo tmr_ppf como principal
+  // Por ora usamos tmr_ppf como TMT Pedidos Atrasados e não há TMA de logo separado no Sheets
+  // Quando tiver coluna separada, adaptar
+
+  let pedVal = 0, pedS = 'bad';
+  const pedLbl = tmrPPF > 0 ? tmrPPF + ' min' : 'Sem dados';
+  if (tmrPPF > 0 && tmrPPF <= 24 * 60) { pedVal = 150; pedS = 'ok'; }
+  else if (tmrPPF > 24 * 60) { pedS = 'bad'; }
+
+  let csatVal = 0, csatS = csat > 95 ? 'ok' : 'bad';
+  if (csat > 95) csatVal = 75;
+
+  // TMA Aprovação Logo — não há coluna separada ainda; placeholder
+  const logoVal = 0, logoS = 'bad', logoLbl = 'Não configurado';
+
+  const total = pedVal + csatVal + logoVal;
+  const max   = 275;
+  rvRender(block, total, max, MESES[mesAtual], [
+    rvItem('TMA Aprovação Logo', logoLbl,   logoVal, logoS, 'Meta: < 30 min'),
+    rvItem('CSAT',               csat > 0 ? csat + '%' : 'Sem dados', csatVal, csatS, 'Meta: > 95%'),
+    rvItem('TMT Ped. Atrasados', pedLbl,    pedVal,  pedS,  'Meta: < 24h'),
+  ]);
+}
+
+// ── RV Gabrielle ──────────────────────────────────────────────
+// TMT Pedidos Atrasados <24h→R$150 | TMT Erros de Envio <24h→R$50 | Auditoria >95%→R$50 | Máx R$250
+// Na planilha PPF: tmr_ppf = TMT Pedidos Atrasados
+// TMT Erros de Envio — não há coluna separada ainda; placeholder
+function renderRV_Gabrielle(ind, block) {
+  const tmrPPF  = ind.tmr_ppf || 0;
+  const auditPct = (ind.audit || {}).pct || 0;
+
+  let pedVal = 0, pedS = 'bad';
+  const pedLbl = tmrPPF > 0 ? tmrPPF + ' min' : 'Sem dados';
+  if (tmrPPF > 0 && tmrPPF <= 24 * 60) { pedVal = 150; pedS = 'ok'; }
+  else if (tmrPPF > 24 * 60) pedS = 'bad';
+
+  // TMT Erros de Envio — coluna não existe ainda
+  const envVal = 0, envS = 'bad', envLbl = 'Não configurado';
+
+  let audVal = 0, audS = auditPct > 95 ? 'ok' : (auditPct > 0 ? 'bad' : 'bad');
+  const audLbl = auditPct > 0 ? auditPct + '%' : 'Sem avaliação';
+  if (auditPct > 95) audVal = 50;
+
+  const total = pedVal + envVal + audVal;
+  const max   = 250;
+  rvRender(block, total, max, MESES[mesAtual], [
+    rvItem('TMT Ped. Atrasados', pedLbl,  pedVal, pedS,  'Meta: < 24h'),
+    rvItem('TMT Erros de Envio', envLbl,  envVal, envS,  'Meta: < 24h'),
+    rvItem('Auditoria',          audLbl,  audVal, audS,  'Meta: > 95%'),
+  ]);
+}
+
+// ── Render genérico RV ────────────────────────────────────────
+function rvRender(block, total, max, mesLabel, itens) {
+  const pct      = Math.round((total / max) * 100);
+  const totalCor = total >= max ? '#3DAF72' : total >= max * 0.6 ? '#F5C300' : total > 0 ? '#F0BC5A' : '#8A8A84';
+  block.innerHTML =
+    '<div class="rv-header">' +
+      '<div class="rv-title"><i class="ti ti-cash" style="font-size:16px;color:var(--gold)"></i>Remuneração variável · ' + mesLabel + '</div>' +
+      '<div class="rv-total"><div class="rv-total-val" style="color:' + totalCor + '">' + (total > 0 ? 'R$ ' + total : '—') + '</div><div class="rv-total-max">de R$ ' + max + ' possíveis</div></div>' +
+    '</div>' +
+    '<div class="rv-progress"><div class="rv-progress-fill" style="width:' + pct + '%;background:' + totalCor + '"></div></div>' +
+    '<div class="rv-items">' + itens.join('') + '</div>';
+}
+
+function rvItem(lbl, valStr, prizeNum, status, meta) {
+  const prizeStr = prizeNum > 0 ? 'R$ ' + prizeNum : '—';
+  return '<div class="rv-item ' + status + '">' +
+    '<div class="rv-item-left">' +
+      '<div class="rv-item-lbl">' + lbl + '</div>' +
+      '<div class="rv-item-val">' + valStr + '<span>' + meta + '</span></div>' +
+    '</div>' +
+    '<div style="text-align:right">' +
+      '<div class="rv-item-prize ' + status + '">' + prizeStr + '</div>' +
+      '<div class="rv-item-status ' + status + '">' + (status==='ok'?'✓ atingiu':'✗ não atingiu') + '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 // ── POP-UPS ───────────────────────────────────────────────────
