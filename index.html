@@ -211,6 +211,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 }
 .t-col:hover .t-tooltip,.tm-col:hover .tm-tooltip{display:block;}
 
+
+.week-select-wrap{display:none;align-items:center;gap:8px;}
+.week-select-wrap.show{display:flex;}
+.week-select{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:11px;font-weight:600;padding:7px 32px 7px 14px;font-family:inherit;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;max-width:200px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A8A84' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+
 </style>
 </head>
 <body>
@@ -325,6 +330,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <button class="tab active" onclick="setPeriodo('semana',this)">Semana</button>
       <button class="tab" onclick="setPeriodo('mes',this)">Mês</button>
     </div>
+    <div class="week-select-wrap" id="week-select-wrap">
+      <select class="week-select" id="week-select" onchange="setSemana(parseInt(this.value))"></select>
+    </div>
     <select class="month-select" id="month-select" onchange="setMes(this.value)">
       <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
       <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
@@ -375,6 +383,74 @@ const hoje = new Date();
 const diaHoje = hoje.getDate(), mesHoje = hoje.getMonth(), anoHoje = hoje.getFullYear();
 const nomeDiaHoje = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][hoje.getDay()];
 let periodo = 'semana', mesAtual = mesHoje;
+let semanaIdx = 0; // índice da semana selecionada (0 = mais recente)
+
+// Gera semanas sex-qui que tocam o mês (igual à lógica Python)
+function semanasDoMes(mes, ano) {
+  const meses = [31,28+(ano%4===0&&(ano%100!==0||ano%400===0)?1:0),31,30,31,30,31,31,30,31,30,31];
+  const primeiro = new Date(ano, mes, 1);
+  const ultimo   = new Date(ano, mes, meses[mes]);
+  // dow JS: 0=dom,1=seg,2=ter,3=qua,4=qui,5=sex,6=sab → py: 0=seg..4=sex,5=sab,6=dom
+  // Queremos sexta (JS=5). offset para voltar até a última sexta antes/em primeiro.
+  const dow = primeiro.getDay(); // 0=dom..6=sab
+  // dias para recuar até a sexta: sex(5)→0, sab(6)→1, dom(0)→2, seg(1)→3, ter(2)→4, qua(3)→5, qui(4)→6
+  const offsetMap = {5:0,6:1,0:2,1:3,2:4,3:5,4:6};
+  const offset = offsetMap[dow];
+  let sexAtual = new Date(primeiro);
+  sexAtual.setDate(sexAtual.getDate() - offset);
+
+  const semanas = [];
+  let i = 0;
+  while (true) {
+    const quiFim = new Date(sexAtual);
+    quiFim.setDate(quiFim.getDate() + 6);
+    if (sexAtual > ultimo) break;
+    // interseção com o mês
+    const iniMes = sexAtual <= primeiro ? primeiro : sexAtual;
+    const fimMes = quiFim >= ultimo    ? ultimo   : quiFim;
+    if (iniMes <= fimMes) {
+      i++;
+      semanas.push({
+        num:   i,
+        inicio: new Date(sexAtual),
+        fim:    new Date(quiFim),
+        label: 'Sex ' + fmtDD_MM(sexAtual) + ' – Qui ' + fmtDD_MM(quiFim)
+      });
+    }
+    sexAtual = new Date(quiFim);
+    sexAtual.setDate(sexAtual.getDate() + 1);
+    if (i > 6) break;
+  }
+  return semanas;
+}
+
+function fmtDD_MM(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+// Semana atual dentro do mês corrente
+function semanaAtualIdx(mes, ano) {
+  const semanas = semanasDoMes(mes, ano);
+  const hoje = new Date();
+  for (let i = semanas.length - 1; i >= 0; i--) {
+    if (hoje >= semanas[i].inicio && hoje <= semanas[i].fim) return i;
+  }
+  return semanas.length - 1; // última se não achar
+}
+
+function popularSeletorSemanas(mes, ano, idxParaManter) {
+  const sel     = document.getElementById('week-select');
+  const semanas = semanasDoMes(mes, ano);
+  sel.innerHTML = semanas.map((s,i) =>
+    `<option value="${i}">${s.label}</option>`
+  ).join('');
+  // Mantém o índice ou vai para o mais próximo disponível
+  let idx = idxParaManter !== undefined ? idxParaManter : semanaAtualIdx(mes, ano);
+  if (idx >= semanas.length) idx = semanas.length - 1;
+  sel.value  = idx;
+  semanaIdx  = idx;
+  return semanas[idx];
+}
 let usuarioLogado = null;
 let dadosCache = {};
 
@@ -683,9 +759,16 @@ async function enviarSugestao() {
 
 // ── FILTROS ───────────────────────────────────────────────────
 async function setPeriodo(p, btn) {
-  periodo=p;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  periodo = p;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
+  const wrap = document.getElementById('week-select-wrap');
+  if (p === 'semana') {
+    wrap.classList.add('show');
+    popularSeletorSemanas(mesAtual, anoHoje, semanaIdx);
+  } else {
+    wrap.classList.remove('show');
+  }
   if (usuarioLogado) {
     const dados = await fetchDados();
     renderTudo(dados);
@@ -693,7 +776,19 @@ async function setPeriodo(p, btn) {
 }
 
 async function setMes(m) {
-  mesAtual=parseInt(m);
+  mesAtual = parseInt(m);
+  if (periodo === 'semana') {
+    // Mantém o mesmo número de semana (índice)
+    popularSeletorSemanas(mesAtual, anoHoje, semanaIdx);
+  }
+  if (usuarioLogado) {
+    const dados = await fetchDados();
+    renderTudo(dados);
+  }
+}
+
+async function setSemana(idx) {
+  semanaIdx = idx;
   if (usuarioLogado) {
     const dados = await fetchDados();
     renderTudo(dados);
@@ -702,6 +797,9 @@ async function setMes(m) {
 
 // Init
 document.getElementById('input-user').focus();
+// Inicializa seletor de semana (começa em modo semana)
+popularSeletorSemanas(mesAtual, anoHoje);
+document.getElementById('week-select-wrap').classList.add('show');
 </script>
 </body>
 </html>
