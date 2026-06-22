@@ -513,7 +513,7 @@ async function fazerLogin() {
     const res  = await fetch(`${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&senha=${encodeURIComponent(senha)}`);
     const json = await res.json();
     if (!json.ok) { setLoginLoading(false); showLoginError('Usuário ou senha incorretos.'); document.getElementById('input-senha').value = ''; return; }
-    usuarioLogado = json.usuario;
+    usuarioLogado = { ...json.usuario, senha: senha };
     setLoginLoading(false);
     document.getElementById('login-screen').style.display = 'none';
     await carregarPainel();
