@@ -170,6 +170,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .fab{position:fixed;bottom:1.75rem;right:1.75rem;background:var(--gold);color:#1A1A18;border:none;border-radius:50px;padding:12px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(245,195,0,0.35);transition:all .2s;z-index:100;}
 .fab.show{display:flex;}
 .fab:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(245,195,0,0.45);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center;z-index:500;padding:1rem;backdrop-filter:blur(2px);}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.5);}
 
 /* ── POPUPS ── */
 .popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(5px);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;}
@@ -412,8 +415,8 @@ body.light .login-card{box-shadow:0 2px 8px rgba(0,0,0,0.07);}
 </div>
 
 <!-- MODAL ACESSOS -->
-<div class="modal-overlay" id="modal-acessos" style="display:none" onclick="if(event.target===this)fecharAcessos()">
-  <div class="modal-box" style="max-width:480px;width:100%">
+<div class="modal-overlay" id="modal-acessos" onclick="if(event.target===this)fecharAcessos()">
+  <div class="modal-box" style="max-width:480px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
       <div>
         <div style="font-size:15px;font-weight:700"><i class="ti ti-key" style="color:var(--gold);margin-right:6px"></i>Acessos</div>
@@ -1111,12 +1114,12 @@ document.getElementById('week-select-wrap').classList.add('show');
 let acessosCache = null; // array de {ferramenta, login, senha, idx}
 
 function abrirAcessos() {
-  document.getElementById('modal-acessos').style.display = 'flex';
+  document.getElementById('modal-acessos').classList.add('show');
   cancelarFormAcesso();
   carregarAcessos();
 }
 function fecharAcessos() {
-  document.getElementById('modal-acessos').style.display = 'none';
+  document.getElementById('modal-acessos').classList.remove('show');
   cancelarFormAcesso();
 }
 
