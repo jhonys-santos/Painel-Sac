@@ -926,9 +926,9 @@ function renderRV_SAC(ind, block) {
   const auditPct = (ind.audit || {}).pct || 0;
 
   let tmaVal = 0, tmaS = 'bad', tmaLbl = tma > 0 ? tma + ' min' : 'Sem dados';
-  if (tma > 0 && tma < 15)        { tmaVal = 150; tmaS = 'ok';   tmaLbl = tma + ' min  (< 15 min)'; }
-  else if (tma >= 15 && tma <= 30){ tmaVal = 100; tmaS = 'warn'; tmaLbl = tma + ' min  (15–30 min)'; }
-  else if (tma > 30)              { tmaVal = 0;   tmaS = 'bad';  tmaLbl = tma + ' min  (> 30 min)'; }
+  if (tma > 0 && tma < 15)       { tmaVal = 150; tmaS = 'ok';   tmaLbl = tma + ' min  (< 15 min)'; }
+  else if (tma >= 15 && tma <= 30){ tmaVal = 100; tmaS = 'ok';  tmaLbl = tma + ' min  (15–30 min)'; }
+  else if (tma > 30)             { tmaVal = 0;   tmaS = 'bad';  tmaLbl = tma + ' min  (> 30 min)'; }
 
   let csatVal = 0, csatS = csat > 95 ? 'ok' : 'bad';
   if (csat > 95) csatVal = 75;
