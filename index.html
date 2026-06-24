@@ -701,10 +701,29 @@ function renderTudo(dados) {
       kpiCard('ti-chart-bar','Pesquisas',ind.pesquisas||0,'neutral','',lbl) +
       kpiCard('ti-ticket','Tickets',ind.tickets||0,'neutral','','resolvidos');
   } else {
-    const sp = (ind.tmr_ppf||0)<=480?'ok':'bad';
-    document.getElementById('kpi-grid').innerHTML =
-      kpiCard('ti-clock','TMR PPF+1',(ind.tmr_ppf||0)+' min',sp,bdg(sp),'Meta: &lt; 480 min') +
-      kpiCard('ti-ticket','Tickets',ind.tickets||0,'neutral','','resolvidos');
+    const sp = (ind.tmr_ppf||0) > 0 && (ind.tmr_ppf||0) <= 480 ? 'ok' : (ind.tmr_ppf||0) > 480 ? 'bad' : 'neutral';
+    if (usuarioLogado.slug === 'daniel') {
+      const csat      = ind.csat;
+      const csatSp    = csat !== null && csat !== undefined ? (csat >= 95 ? 'ok' : 'bad') : 'neutral';
+      const csatStr   = csat !== null && csat !== undefined ? csat + '%' : '—';
+      const tmaLogo    = ind.tma_logo;
+      const tmaLogoSp  = tmaLogo > 0 && tmaLogo <= 30 ? 'ok' : tmaLogo > 30 ? 'bad' : 'neutral';
+      const tmaLogoStr = tmaLogo > 0 ? tmaLogo + ' min' : '—';
+      const tmrPPFStr  = ind.tmr_ppf > 0 ? fmtHoras(ind.tmr_ppf) : '—';
+      const tmrPPFSp   = ind.tmr_ppf > 0 && ind.tmr_ppf <= 1440 ? 'ok' : ind.tmr_ppf > 1440 ? 'bad' : 'neutral';
+      const testesStr  = ind.testes_aprovados !== null && ind.testes_aprovados !== undefined ? ind.testes_aprovados : '—';
+      document.getElementById('kpi-grid').innerHTML =
+        kpiCard('ti-clock',     'TMT Ped. Atrasados', tmrPPFStr,              tmrPPFSp,  bdg(tmrPPFSp),  'Meta: &lt; 24h') +
+        kpiCard('ti-clock',     'TMA Aprov. Logo',    tmaLogoStr,             tmaLogoSp, bdg(tmaLogoSp), 'Meta: &lt; 30 min') +
+        kpiCard('ti-star',      'CSAT',               csatStr,                csatSp,    bdg(csatSp),    'Meta: &gt; 95%') +
+        kpiCard('ti-chart-bar', 'Pesquisas',          ind.pesquisas || 0,     'neutral', '',             'esta semana') +
+        kpiCard('ti-check',     'Testes Aprov.',      testesStr,              'neutral', '',             'aprovados') +
+        kpiCard('ti-ticket',    'Tickets',            ind.tickets   || 0,     'neutral', '',             'resolvidos');
+    } else {
+      document.getElementById('kpi-grid').innerHTML =
+        kpiCard('ti-clock','TMR PPF+1',(ind.tmr_ppf||0) > 0 ? fmtHoras(ind.tmr_ppf) : '—', sp, bdg(sp),'Meta: &lt; 480 min') +
+        kpiCard('ti-ticket','Tickets',ind.tickets||0,'neutral','','resolvidos');
+    }
   }
 
   renderEvolucao(ind.tendencia_tma||[], ind.tendencia_csat||[]);
@@ -817,16 +836,17 @@ function renderBarsMes(id, dados, meta, cOk, cBad, inv) {
 function renderPico(pico) {
   const isMes = periodo==='mes';
   if (!pico.length) { document.getElementById('pico-card').innerHTML='<div class="empty-state">Sem dados de pico.</div>'; return; }
+  const picoUnidade = usuarioLogado.tipo === 'ppf' ? 'tickets' : 'atendimentos';
   if (isMes) {
     const maxV=Math.max(...pico.map(d=>d.v),1), pk=pico.reduce((a,b)=>b.v>a.v?b:a,pico[0]);
     document.getElementById('pico-card').innerHTML=`<div class="pico-inner">
       <div class="pico-hl"><div class="pico-day">Dia ${pk.n}</div><div class="pico-sub">maior pico</div></div>
       <div class="pico-bars">${pico.map(d=>{const isH=d.n===diaHoje&&mesAtual===mesHoje;const h=d.v>0?Math.round((d.v/maxV)*46):3;const cor=isH?'var(--gold)':d.n===pk.n?'rgba(245,195,0,.65)':d.v===0?'rgba(255,255,255,.05)':'rgba(245,195,0,.2)';return `<div class="pc-col"><div class="pc-bar" style="height:${Math.max(h,3)}px;background:${cor};${isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':''}"></div><div class="pc-lbl" style="${isH||d.n===pk.n?'color:var(--gold)':''}">${d.n}</div></div>`;}).join('')}</div>
-      <div class="pico-info"><strong>${pk.v} atendimentos</strong> no dia ${pk.n} — maior do mês.</div></div>`;
+      <div class="pico-info"><strong>${pk.v} ${picoUnidade}</strong> no dia ${pk.n} — maior do mês.</div></div>`;
   } else {
     const maxV=Math.max(...pico.map(d=>d.v),1), pk=pico.reduce((a,b)=>b.v>a.v?b:a,pico[0]);
     const picoCard = document.getElementById('pico-card');
-    picoCard.innerHTML='<div class="pico-inner"><div class="pico-hl"><div class="pico-day">' + pk.d + '</div><div class="pico-sub">maior pico</div></div><div class="pico-bars" id="pico-bars-sem">' + pico.map(d=>{const isH=d.d===nomeDiaHoje&&mesAtual===mesHoje;const h=Math.round((d.v/maxV)*46);const cor=isH?'var(--gold)':d.d===pk.d?'rgba(245,195,0,.65)':'rgba(245,195,0,.2)';return '<div class="pc-col"><span class="t-tooltip">'+d.v+' at.</span><div class="pc-val">'+d.v+'</div><div class="pc-bar" style="height:'+Math.max(h,4)+'px;background:'+cor+';'+(isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'')+'"></div><div class="pc-lbl" style="'+(isH?'color:var(--gold);font-weight:700':'')+'">'+d.d+(isH?' ●':'')+'</div></div>';}).join('') + '</div><div class="pico-info"><strong>' + pk.v + ' atendimentos</strong> na ' + pk.d + 'feira — maior da semana.</div></div>';
+    picoCard.innerHTML='<div class="pico-inner"><div class="pico-hl"><div class="pico-day">' + pk.d + '</div><div class="pico-sub">maior pico</div></div><div class="pico-bars" id="pico-bars-sem">' + pico.map(d=>{const isH=d.d===nomeDiaHoje&&mesAtual===mesHoje;const h=Math.round((d.v/maxV)*46);const cor=isH?'var(--gold)':d.d===pk.d?'rgba(245,195,0,.65)':'rgba(245,195,0,.2)';return '<div class="pc-col"><span class="t-tooltip">'+d.v+' at.</span><div class="pc-val">'+d.v+'</div><div class="pc-bar" style="height:'+Math.max(h,4)+'px;background:'+cor+';'+(isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'')+'"></div><div class="pc-lbl" style="'+(isH?'color:var(--gold);font-weight:700':'')+'">'+d.d+(isH?' ●':'')+'</div></div>';}).join('') + '</div><div class="pico-info"><strong>' + pk.v + ' ' + picoUnidade + '</strong> na ' + pk.d + 'feira — maior da semana.</div></div>';
     const picoBarsCont = document.getElementById('pico-bars-sem');
     if (picoBarsCont) {
       const dadosTrend = pico.map(d => ({val: d.v > 0 ? d.v : null}));
@@ -953,32 +973,35 @@ function renderRV_SAC(ind, block) {
 }
 
 // ── RV Daniel — Auxiliar Adm. ─────────────────────────────────
-// TMA Aprovação Logo <30min→R$50 | CSAT >95%→R$75 | TMT Pedidos Atrasados <24h→R$150 | Máx R$275
-// Na planilha PPF: tmr_ppf = TMT Pedidos Atrasados
+// TMA Aprov. Logo ≤30min→R$50 | CSAT >95%→R$75 | TMT Ped. Atrasados <24h→R$150 | Máx R$275
 function renderRV_Daniel(ind, block) {
-  const tmrPPF = ind.tmr_ppf || 0; // TMT Pedidos Atrasados
-  const csat   = ind.csat    || 0; // CSAT vem do Apps Script? PPF não tem CSAT — mostrar 0
-  // TMA Aprovação: Daniel usa o campo tmr_ppf como principal
-  // Por ora usamos tmr_ppf como TMT Pedidos Atrasados e não há TMA de logo separado no Sheets
-  // Quando tiver coluna separada, adaptar
+  const tmrPPF  = ind.tmr_ppf  || 0; // TMT Pedidos Atrasados (min)
+  const tmaLogo = ind.tma_logo || 0; // TMA Aprovação Logo (min)
+  const csat    = ind.csat     || 0;
 
+  // TMT Pedidos Atrasados: meta < 24h = 1440 min
   let pedVal = 0, pedS = 'bad';
-  const pedLbl = tmrPPF > 0 ? tmrPPF + ' min' : 'Sem dados';
-  if (tmrPPF > 0 && tmrPPF <= 24 * 60) { pedVal = 150; pedS = 'ok'; }
-  else if (tmrPPF > 24 * 60) { pedS = 'bad'; }
+  const pedLbl = tmrPPF > 0 ? fmtHoras(tmrPPF) : 'Sem dados';
+  if (tmrPPF > 0 && tmrPPF <= 1440) { pedVal = 150; pedS = 'ok'; }
+  else if (tmrPPF > 1440) pedS = 'bad';
 
+  // CSAT: meta > 95%
   let csatVal = 0, csatS = csat > 95 ? 'ok' : 'bad';
   if (csat > 95) csatVal = 75;
+  const csatLbl = csat > 0 ? csat + '%' : 'Sem dados';
 
-  // TMA Aprovação Logo — não há coluna separada ainda; placeholder
-  const logoVal = 0, logoS = 'bad', logoLbl = 'Não configurado';
+  // TMA Aprovação Logo: meta ≤ 30 min
+  let logoVal = 0, logoS = 'bad';
+  const logoLbl = tmaLogo > 0 ? tmaLogo + ' min' : 'Sem dados';
+  if (tmaLogo > 0 && tmaLogo <= 30) { logoVal = 50; logoS = 'ok'; }
+  else if (tmaLogo > 30) logoS = 'bad';
 
   const total = pedVal + csatVal + logoVal;
   const max   = 275;
   rvRender(block, total, max, MESES[mesAtual], [
-    rvItem('TMA Aprovação Logo', logoLbl,   logoVal, logoS, 'Meta: < 30 min'),
-    rvItem('CSAT',               csat > 0 ? csat + '%' : 'Sem dados', csatVal, csatS, 'Meta: > 95%'),
-    rvItem('TMT Ped. Atrasados', pedLbl,    pedVal,  pedS,  'Meta: < 24h'),
+    rvItem('TMT Ped. Atrasados', pedLbl,  pedVal,  pedS,  'Meta: < 24h'),
+    rvItem('CSAT',               csatLbl, csatVal, csatS, 'Meta: > 95%'),
+    rvItem('TMA Aprov. Logo',    logoLbl, logoVal, logoS, 'Meta: ≤ 30 min'),
   ]);
 }
 
