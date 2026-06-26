@@ -522,13 +522,19 @@ function fmtDD_MM(d) {
 }
 
 // Semana atual dentro do mês corrente
+// Regra: avança para nova semana apenas a partir de sexta-feira (getDay()=5)
+// De sex a qui permanece na semana Sex-Qui corrente
 function semanaAtualIdx(mes, ano) {
   const semanas = semanasDoMes(mes, ano);
-  const hoje = new Date();
+  const agora   = new Date();
+  // Normaliza para meia-noite para comparar só datas
+  const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   for (let i = semanas.length - 1; i >= 0; i--) {
-    if (hoje >= semanas[i].inicio && hoje <= semanas[i].fim) return i;
+    const ini = new Date(semanas[i].inicio.getFullYear(), semanas[i].inicio.getMonth(), semanas[i].inicio.getDate());
+    const fim = new Date(semanas[i].fim.getFullYear(),    semanas[i].fim.getMonth(),    semanas[i].fim.getDate());
+    if (hoje >= ini && hoje <= fim) return i;
   }
-  return semanas.length - 1; // última se não achar
+  return semanas.length - 1;
 }
 
 function popularSeletorSemanas(mes, ano, idxParaManter) {
@@ -846,7 +852,8 @@ function renderPico(pico) {
   } else {
     const maxV=Math.max(...pico.map(d=>d.v),1), pk=pico.reduce((a,b)=>b.v>a.v?b:a,pico[0]);
     const picoCard = document.getElementById('pico-card');
-    picoCard.innerHTML='<div class="pico-inner"><div class="pico-hl"><div class="pico-day">' + pk.d + '</div><div class="pico-sub">maior pico</div></div><div class="pico-bars" id="pico-bars-sem">' + pico.map(d=>{const isH=d.d===nomeDiaHoje&&mesAtual===mesHoje;const h=Math.round((d.v/maxV)*46);const cor=isH?'var(--gold)':d.d===pk.d?'rgba(245,195,0,.65)':'rgba(245,195,0,.2)';return '<div class="pc-col"><span class="t-tooltip">'+d.v+' at.</span><div class="pc-val">'+d.v+'</div><div class="pc-bar" style="height:'+Math.max(h,4)+'px;background:'+cor+';'+(isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'')+'"></div><div class="pc-lbl" style="'+(isH?'color:var(--gold);font-weight:700':'')+'">'+d.d+(isH?' ●':'')+'</div></div>';}).join('') + '</div><div class="pico-info"><strong>' + pk.v + ' ' + picoUnidade + '</strong> na ' + pk.d + 'feira — maior da semana.</div></div>';
+    const nomesDia = {Sex:'Sexta',Seg:'Segunda',Ter:'Terça',Qua:'Quarta',Qui:'Quinta'};
+    picoCard.innerHTML='<div class="pico-inner"><div class="pico-hl"><div class="pico-day">' + pk.d + '</div><div class="pico-sub">maior pico</div></div><div class="pico-bars" id="pico-bars-sem">' + pico.map(d=>{const isH=d.d===nomeDiaHoje&&mesAtual===mesHoje;const h=maxV>0?Math.round((d.v/maxV)*46):0;const cor=isH?'var(--gold)':d.d===pk.d&&pk.v>0?'rgba(245,195,0,.65)':'rgba(245,195,0,.2)';return '<div class="pc-col"><span class="t-tooltip">'+d.v+' '+picoUnidade+'</span><div class="pc-val" style="margin-bottom:4px">'+d.v+'</div><div class="pc-bar" style="height:'+Math.max(h,4)+'px;background:'+cor+';'+(isH?'outline:1.5px solid var(--gold-dark);outline-offset:1px':'')+'"></div><div class="pc-lbl" style="'+(isH?'color:var(--gold);font-weight:700':'')+'">'+d.d+(isH?' ●':'')+'</div></div>';}).join('') + '</div><div class="pico-info"><strong>' + pk.v + ' ' + picoUnidade + '</strong> na ' + (nomesDia[pk.d]||pk.d) + '-feira — maior da semana.</div></div>';
     const picoBarsCont = document.getElementById('pico-bars-sem');
     if (picoBarsCont) {
       const dadosTrend = pico.map(d => ({val: d.v > 0 ? d.v : null}));
