@@ -954,19 +954,21 @@ function copiarID(id, idx) {
 }
 
 function renderEscala(escala, mes, ano) {
-  // Semana começa na Segunda — cabeçalho: S T Q Q S S D
   document.getElementById('esc-hdr').innerHTML=['S','T','Q','Q','S','S','D'].map(d=>`<div class="esc-head">${d}</div>`).join('');
   const dowPrimeiro = new Date(ano, mes, 1).getDay();
   const offset = (dowPrimeiro + 6) % 7;
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate(); // último dia do mês
   let html = '';
   for (let i = 0; i < offset; i++) html += '<div></div>';
   (escala||[]).forEach(item => {
+    if (item.dia > diasNoMes) return; // ignora dias inexistentes
     const isH = mes === mesHoje && ano === anoHoje && item.dia === diaHoje;
     html += `<div class="day-cell d-${item.status||'F'} ${isH?'d-today':''}"><div class="day-n">${item.dia}</div><div class="day-s">${item.status||'F'}</div></div>`;
   });
   document.getElementById('esc-grid').innerHTML = html;
-  // Atualiza label e sincroniza variáveis
   escalaMes = mes; escalaAno = ano;
+  // Atualiza título e label
+  document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[mes].toUpperCase()} ${ano}`;
   atualizarLabelEscala();
 }
 
