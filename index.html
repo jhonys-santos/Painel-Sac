@@ -401,7 +401,14 @@ body.light .login-card{box-shadow:0 2px 8px rgba(0,0,0,0.07);}
   <div class="slabel" id="rv-label" style="display:none">Remuneração variável · mês</div>
   <div class="rv-card" id="rv-block" style="display:none"></div>
   <div class="card" style="margin-bottom:1.5rem">
-    <div class="slabel" id="escala-title">Escala de serviço</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div class="slabel" id="escala-title">Escala de serviço</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="navEscala(-1)" style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;color:var(--text-muted);font-size:13px;display:flex;align-items:center;justify-content:center;line-height:1">‹</button>
+        <span id="escala-mes-label" style="font-size:12px;font-weight:600;color:var(--text);min-width:90px;text-align:center"></span>
+        <button onclick="navEscala(1)" style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;color:var(--text-muted);font-size:13px;display:flex;align-items:center;justify-content:center;line-height:1">›</button>
+      </div>
+    </div>
     <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px" id="escala-horario">08:00 às 18:00 · 5×2</div>
     <div class="esc-hdr" id="esc-hdr"></div>
     <div class="esc-grid" id="esc-grid"></div>
@@ -476,7 +483,29 @@ const hoje = new Date();
 const diaHoje = hoje.getDate(), mesHoje = hoje.getMonth(), anoHoje = hoje.getFullYear();
 const nomeDiaHoje = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][hoje.getDay()];
 let periodo = 'semana', mesAtual = mesHoje;
-let semanaIdx = 0; // índice da semana selecionada (0 = mais recente)
+let semanaIdx = 0;
+// Escala tem navegação independente
+let escalaMes = mesHoje, escalaAno = anoHoje;
+
+async function navEscala(dir) {
+  escalaMes += dir;
+  if (escalaMes > 11) { escalaMes = 0; escalaAno++; }
+  if (escalaMes < 0)  { escalaMes = 11; escalaAno--; }
+  if (!usuarioLogado) return;
+  // Busca só a escala do novo mês sem recarregar KPIs
+  const url = `${API_URL}?action=escala&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}&mes=${escalaMes}&ano=${escalaAno}`;
+  try {
+    const res  = await fetch(url);
+    const json = await res.json();
+    renderEscala(json.escala || [], escalaMes, escalaAno);
+    atualizarLabelEscala();
+  } catch(e) { console.error('navEscala', e); }
+}
+
+function atualizarLabelEscala() {
+  const el = document.getElementById('escala-mes-label');
+  if (el) el.textContent = MESES[escalaMes] + ' ' + escalaAno;
+}
 
 // Gera semanas sex-qui que tocam o mês (igual à lógica Python)
 function semanasDoMes(mes, ano) {
@@ -736,7 +765,7 @@ function renderTudo(dados) {
   renderPico(ind.pico||[]);
   renderAudit(ind.audit||{pct:0,ok:0,total:0});
   renderDetratores(ind.insatisfeitos||[]);
-  renderEscala(dados.escala||[]);
+  renderEscala(dados.escala||[], mesAtual, anoHoje);
   renderRV(dados.indicadores||{});
 }
 
@@ -915,15 +944,21 @@ function copiarID(id, idx) {
   });
 }
 
-function renderEscala(escala) {
-  document.getElementById('esc-hdr').innerHTML=['D','S','T','Q','Q','S','S'].map(d=>`<div class="esc-head">${d}</div>`).join('');
-  const primeiro=new Date(anoHoje,mesAtual,1).getDay();
-  let html=''; for(let i=0;i<primeiro;i++) html+='<div></div>';
-  (escala||[]).forEach(item=>{
-    const isH=mesAtual===mesHoje&&item.dia===diaHoje;
-    html+=`<div class="day-cell d-${item.status||'F'} ${isH?'d-today':''}"><div class="day-n">${item.dia}</div><div class="day-s">${item.status||'F'}</div></div>`;
+function renderEscala(escala, mes, ano) {
+  // Semana começa na Segunda — cabeçalho: S T Q Q S S D
+  document.getElementById('esc-hdr').innerHTML=['S','T','Q','Q','S','S','D'].map(d=>`<div class="esc-head">${d}</div>`).join('');
+  const dowPrimeiro = new Date(ano, mes, 1).getDay();
+  const offset = (dowPrimeiro + 6) % 7;
+  let html = '';
+  for (let i = 0; i < offset; i++) html += '<div></div>';
+  (escala||[]).forEach(item => {
+    const isH = mes === mesHoje && ano === anoHoje && item.dia === diaHoje;
+    html += `<div class="day-cell d-${item.status||'F'} ${isH?'d-today':''}"><div class="day-n">${item.dia}</div><div class="day-s">${item.status||'F'}</div></div>`;
   });
-  document.getElementById('esc-grid').innerHTML=html;
+  document.getElementById('esc-grid').innerHTML = html;
+  // Atualiza label e sincroniza variáveis
+  escalaMes = mes; escalaAno = ano;
+  atualizarLabelEscala();
 }
 
 function renderRV(ind) {
