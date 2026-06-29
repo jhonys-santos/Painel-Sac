@@ -492,13 +492,12 @@ async function navEscala(dir) {
   if (escalaMes > 11) { escalaMes = 0; escalaAno++; }
   if (escalaMes < 0)  { escalaMes = 11; escalaAno--; }
   if (!usuarioLogado) return;
-  // Busca só a escala do novo mês sem recarregar KPIs
   const url = `${API_URL}?action=escala&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}&mes=${escalaMes}&ano=${escalaAno}`;
   try {
     const res  = await fetch(url);
     const json = await res.json();
     renderEscala(json.escala || [], escalaMes, escalaAno);
-    atualizarLabelEscala();
+    document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[escalaMes].toUpperCase()} ${escalaAno}`;
   } catch(e) { console.error('navEscala', e); }
 }
 
@@ -724,7 +723,7 @@ function renderTudo(dados) {
   document.getElementById('kpi-label').textContent = `Indicadores principais · ${MESES[mesAtual]} · ${periodo==='semana'?'Semana':'Mês'}`;
   document.getElementById('detrat-label').textContent = `Insatisfeitos · CSAT · ${MESES[mesAtual]}`;
   document.getElementById('pico-label').textContent = periodo==='mes'?`Pico de demanda · ${MESES[mesAtual]}`:'Pico de demanda · semana';
-  document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[mesAtual]} ${anoHoje}`;
+  document.getElementById('escala-horario').textContent = '08:00 às 18:00 · 5×2';
 
   if (usuarioLogado.tipo === 'sac') {
     const s1=stTMA(ind.tma||0), s2=stCSAT(ind.csat||0), s3=stTMR(ind.tmr_refab||0);
@@ -765,7 +764,17 @@ function renderTudo(dados) {
   renderPico(ind.pico||[]);
   renderAudit(ind.audit||{pct:0,ok:0,total:0});
   renderDetratores(ind.insatisfeitos||[]);
-  renderEscala(dados.escala||[], mesAtual, anoHoje);
+  // Escala: usa escalaMes/escalaAno independente dos KPIs
+  // Se é o primeiro carregamento (escalaMes == mesAtual), usa a escala que veio com os dados
+  // Senão busca separado via navEscala (já feito pelo próprio nav)
+  if (escalaMes === mesAtual && escalaAno === anoHoje) {
+    renderEscala(dados.escala||[], escalaMes, escalaAno);
+  } else {
+    // Mantém a escala atual sem sobrescrever (usuário já navegou para outro mês)
+    atualizarLabelEscala();
+  }
+  // Título do card sempre reflete escalaMes
+  document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[escalaMes].toUpperCase()} ${escalaAno}`;
   renderRV(dados.indicadores||{});
 }
 
