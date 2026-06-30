@@ -401,9 +401,12 @@ body.light .login-card{box-shadow:0 2px 8px rgba(0,0,0,0.07);}
   <div class="slabel" id="rv-label" style="display:none">Remuneração variável · mês</div>
   <div class="rv-card" id="rv-block" style="display:none"></div>
   <div class="card" style="margin-bottom:1.5rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;flex-wrap:wrap;gap:8px">
       <div class="slabel" id="escala-title">Escala de serviço</div>
       <div style="display:flex;align-items:center;gap:6px">
+        <button id="btn-trocas" onclick="abrirTrocasPendentes()" style="background:var(--gold-dim);border:1px solid var(--gold-dark);border-radius:8px;padding:5px 12px;cursor:pointer;color:var(--gold);font-size:11px;font-weight:700;font-family:inherit;display:flex;align-items:center;gap:5px">
+          <i class="ti ti-arrows-exchange" style="font-size:13px"></i> Trocas <span id="trocas-count" style="background:var(--gold);color:#1A1A18;border-radius:10px;padding:1px 6px;font-size:10px">0</span>
+        </button>
         <button onclick="navEscala(-1)" style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;color:var(--text-muted);font-size:13px;display:flex;align-items:center;justify-content:center;line-height:1">‹</button>
         <span id="escala-mes-label" style="font-size:12px;font-weight:600;color:var(--text);min-width:90px;text-align:center"></span>
         <button onclick="navEscala(1)" style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;color:var(--text-muted);font-size:13px;display:flex;align-items:center;justify-content:center;line-height:1">›</button>
@@ -469,6 +472,51 @@ body.light .login-card{box-shadow:0 2px 8px rgba(0,0,0,0.07);}
   </div>
 </div>
 
+<!-- MODAL TROCA DE ESCALA -->
+<div class="modal-overlay" id="modal-troca" onclick="if(event.target===this)fecharTroca()">
+  <div class="modal-box" style="max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <div>
+        <div style="font-size:15px;font-weight:700"><i class="ti ti-arrows-exchange" style="color:var(--gold);margin-right:6px"></i>Solicitar troca</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Somente sábados · Bloqueado na sexta-feira</div>
+      </div>
+      <button onclick="fecharTroca()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;padding:4px"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Seu sábado</div>
+      <div style="font-size:14px;font-weight:700;color:var(--gold)" id="troca-dia-meu"></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Trocar com</label>
+      <select id="troca-consultor" onchange="carregarSabadosAlvo()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;font-size:13px;color:var(--text);font-family:inherit">
+        <option value="">Selecione o consultor…</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Sábado do colega</label>
+      <select id="troca-dia-alvo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;font-size:13px;color:var(--text);font-family:inherit">
+        <option value="">Selecione o consultor primeiro…</option>
+      </select>
+    </div>
+    <div id="troca-erro" style="display:none;font-size:11px;color:var(--bad-text);margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="enviarTroca()" style="flex:1;background:var(--gold);color:#1A1A18;border:none;border-radius:var(--rs);padding:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Solicitar troca</button>
+      <button onclick="fecharTroca()" style="background:none;border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;font-size:12px;color:var(--text-muted);font-family:inherit;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESPONDER TROCA -->
+<div class="modal-overlay" id="modal-troca-pendente" onclick="if(event.target===this)fecharTrocaPendente()">
+  <div class="modal-box" style="max-width:420px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <div style="font-size:15px;font-weight:700"><i class="ti ti-bell" style="color:var(--gold);margin-right:6px"></i>Troca pendente</div>
+      <button onclick="fecharTrocaPendente()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;padding:4px"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="troca-pendente-lista" style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto"></div>
+  </div>
+</div>
+
 <button class="fab" id="fab-btn" onclick="abrirSugestao()">
   <i class="ti ti-bulb"></i> Enviar sugestão
 </button>
@@ -496,6 +544,7 @@ async function navEscala(dir) {
   try {
     const res  = await fetch(url);
     const json = await res.json();
+    trocasPendentes = json.trocas_pendentes || [];
     renderEscala(json.escala || [], escalaMes, escalaAno);
     document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[escalaMes].toUpperCase()} ${escalaAno}`;
   } catch(e) { console.error('navEscala', e); }
@@ -765,13 +814,13 @@ function renderTudo(dados) {
   renderAudit(ind.audit||{pct:0,ok:0,total:0});
   renderDetratores(ind.insatisfeitos||[]);
   // Escala: usa escalaMes/escalaAno independente dos KPIs
-  // Se é o primeiro carregamento (escalaMes == mesAtual), usa a escala que veio com os dados
-  // Senão busca separado via navEscala (já feito pelo próprio nav)
+  // Trocas pendentes sempre atualizam, independente do mês exibido na escala
+  trocasPendentes = dados.trocas_pendentes || [];
   if (escalaMes === mesAtual && escalaAno === anoHoje) {
     renderEscala(dados.escala||[], escalaMes, escalaAno);
   } else {
-    // Mantém a escala atual sem sobrescrever (usuário já navegou para outro mês)
     atualizarLabelEscala();
+    mostrarBadgePendente();
   }
   // Título do card sempre reflete escalaMes
   document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[escalaMes].toUpperCase()} ${escalaAno}`;
@@ -957,19 +1006,26 @@ function renderEscala(escala, mes, ano) {
   document.getElementById('esc-hdr').innerHTML=['S','T','Q','Q','S','S','D'].map(d=>`<div class="esc-head">${d}</div>`).join('');
   const dowPrimeiro = new Date(ano, mes, 1).getDay();
   const offset = (dowPrimeiro + 6) % 7;
-  const diasNoMes = new Date(ano, mes + 1, 0).getDate(); // último dia do mês
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+  // Verifica se hoje é sexta (bloqueio)
+  const bloqueado = new Date().getDay() === 5;
   let html = '';
   for (let i = 0; i < offset; i++) html += '<div></div>';
   (escala||[]).forEach(item => {
-    if (item.dia > diasNoMes) return; // ignora dias inexistentes
-    const isH = mes === mesHoje && ano === anoHoje && item.dia === diaHoje;
-    html += `<div class="day-cell d-${item.status||'F'} ${isH?'d-today':''}"><div class="day-n">${item.dia}</div><div class="day-s">${item.status||'F'}</div></div>`;
+    if (item.dia > diasNoMes) return;
+    const isH    = mes === mesHoje && ano === anoHoje && item.dia === diaHoje;
+    const dow    = new Date(ano, mes, item.dia).getDay();
+    const isSab  = dow === 6;
+    const clique = isSab && !bloqueado ? `onclick="abrirTroca(${item.dia},${mes},${ano},'${item.status}')" style="cursor:pointer"` : '';
+    const trocaBadge = isSab && !bloqueado ? `<div style="position:absolute;top:3px;right:3px;font-size:8px;color:var(--gold);opacity:0.7"><i class="ti ti-arrows-exchange"></i></div>` : '';
+    html += `<div class="day-cell d-${item.status||'F'} ${isH?'d-today':''}" ${clique} style="position:relative">${trocaBadge}<div class="day-n">${item.dia}</div><div class="day-s">${item.status||'F'}</div></div>`;
   });
   document.getElementById('esc-grid').innerHTML = html;
   escalaMes = mes; escalaAno = ano;
-  // Atualiza título e label
   document.getElementById('escala-title').textContent = `Escala de serviço · ${MESES[mes].toUpperCase()} ${ano}`;
   atualizarLabelEscala();
+  // Verifica trocas pendentes
+  mostrarBadgePendente();
 }
 
 function renderRV(ind) {
@@ -1185,7 +1241,204 @@ try {
 popularSeletorSemanas(mesAtual, anoHoje);
 document.getElementById('week-select-wrap').classList.add('show');
 
-// ── ACESSOS ──────────────────────────────────────────────────
+// ── TROCAS DE ESCALA ─────────────────────────────────────────
+let trocasPendentes  = [];
+let trocaDiaMeu = null, trocaMesMeu = null, trocaAnoMeu = null;
+let consultoresCache = [];
+let sabadosAlvoCache = {};
+
+async function navEscalaComTrocas(dir) {
+  await navEscala(dir);
+  // Recarrega sábados do consultor para o novo mês
+  sabadosAlvoCache = {};
+}
+
+async function abrirTroca(dia, mes, ano, status) {
+  // Bloqueia sábados que já passaram
+  const dataSabado = new Date(ano, mes, dia);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  if (dataSabado < hoje) {
+    alert('Não é possível solicitar troca para um sábado que já passou.');
+    return;
+  }
+
+  trocaDiaMeu = dia; trocaMesMeu = mes; trocaAnoMeu = ano;
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  document.getElementById('troca-dia-meu').textContent = `${dia} de ${meses[mes]} de ${ano} (${status})`;
+  document.getElementById('troca-erro').style.display = 'none';
+  document.getElementById('troca-dia-alvo').innerHTML = '<option value="">Selecione o consultor primeiro…</option>';
+
+  // Carrega consultores se ainda não carregou
+  if (!consultoresCache.length) {
+    try {
+      const url  = `${API_URL}?action=consultores&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}`;
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (json.erro) { alert('Erro ao carregar consultores: ' + json.erro); }
+      consultoresCache = json.consultores || [];
+      if (!consultoresCache.length) console.warn('Nenhum consultor retornado pela API', json);
+    } catch(e) {
+      alert('Erro ao buscar consultores: ' + e.message);
+    }
+  }
+  const sel = document.getElementById('troca-consultor');
+  sel.innerHTML = '<option value="">Selecione o consultor…</option>' +
+    consultoresCache.map(c => `<option value="${c.slug}">${c.nome}</option>`).join('');
+
+  document.getElementById('modal-troca').classList.add('show');
+}
+
+function fecharTroca() {
+  document.getElementById('modal-troca').classList.remove('show');
+}
+
+async function carregarSabadosAlvo() {
+  const slug = document.getElementById('troca-consultor').value;
+  if (!slug) return;
+  const sel = document.getElementById('troca-dia-alvo');
+  sel.innerHTML = '<option value="">Carregando…</option>';
+
+  if (!sabadosAlvoCache[slug]) {
+    const url  = `${API_URL}?action=sabadosConsultor&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}&alvo=${encodeURIComponent(slug)}&mes=${escalaMes}&ano=${escalaAno}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+    sabadosAlvoCache[slug] = (json.sabados || []);
+  }
+
+  const sabados = sabadosAlvoCache[slug];
+  if (!sabados.length) {
+    sel.innerHTML = '<option value="">Nenhum sábado disponível neste mês</option>';
+    return;
+  }
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  sel.innerHTML = '<option value="">Selecione o sábado…</option>' +
+    sabados.map(s => `<option value="${s.dia}|${escalaMes}|${escalaAno}">${s.dia} ${meses[escalaMes]} ${escalaAno} (${s.status})</option>`).join('');
+}
+
+async function enviarTroca() {
+  const erroEl  = document.getElementById('troca-erro');
+  const slug    = document.getElementById('troca-consultor').value;
+  const alvoVal = document.getElementById('troca-dia-alvo').value;
+  erroEl.style.display = 'none';
+
+  if (!slug)    { erroEl.textContent = 'Selecione o consultor.'; erroEl.style.display = 'block'; return; }
+  if (!alvoVal) { erroEl.textContent = 'Selecione o sábado do colega.'; erroEl.style.display = 'block'; return; }
+
+  const [dia_alvo, mes_alvo, ano_alvo] = alvoVal.split('|').map(Number);
+
+  const payload = {
+    action: 'solicitarTroca',
+    usuario: usuarioLogado.slug,
+    senha_auth: usuarioLogado.senha,
+    dia_solicitante: trocaDiaMeu, mes_solicitante: trocaMesMeu, ano_solicitante: trocaAnoMeu,
+    consultor_alvo: slug,
+    dia_alvo, mes_alvo, ano_alvo,
+  };
+  try {
+    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (!json.ok) { erroEl.textContent = json.erro || 'Erro ao solicitar.'; erroEl.style.display = 'block'; return; }
+    fecharTroca();
+    alert('Solicitação enviada! O colega receberá a notificação no painel.');
+  } catch(e) {
+    erroEl.textContent = e.message; erroEl.style.display = 'block';
+  }
+}
+
+function mostrarBadgePendente() {
+  const count = document.getElementById('trocas-count');
+  const btn   = document.getElementById('btn-trocas');
+  if (!count || !btn) return;
+  const n = (trocasPendentes || []).length;
+  count.textContent = n;
+  btn.style.opacity = n > 0 ? '1' : '0.5';
+  btn.style.boxShadow = n > 0 ? '0 0 0 2px rgba(245,195,0,0.3)' : 'none';
+}
+
+async function abrirTrocasPendentes() {
+  const lista = document.getElementById('troca-pendente-lista');
+  lista.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px">Verificando solicitações…</div>';
+  document.getElementById('modal-troca-pendente').classList.add('show');
+
+  // Busca dados frescos do servidor (não confia só no cache local)
+  try {
+    const url  = `${API_URL}?action=escala&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}&mes=${escalaMes}&ano=${escalaAno}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+    trocasPendentes = json.trocas_pendentes || [];
+    mostrarBadgePendente();
+  } catch(e) { /* usa cache local se a busca falhar */ }
+
+  // Carrega nomes dos consultores se ainda não tiver
+  if (!consultoresCache.length) {
+    try {
+      const url2  = `${API_URL}?action=consultores&usuario=${encodeURIComponent(usuarioLogado.slug)}&senha=${encodeURIComponent(usuarioLogado.senha)}`;
+      const res2  = await fetch(url2);
+      const json2 = await res2.json();
+      consultoresCache = json2.consultores || [];
+    } catch(e) {}
+  }
+
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const nomes = {};
+  consultoresCache.forEach(c => nomes[c.slug] = c.nome);
+
+  if (!trocasPendentes.length) {
+    lista.innerHTML = '<div style="font-size:12px;color:var(--text-hint);text-align:center;padding:24px"><i class="ti ti-checks" style="font-size:24px;display:block;margin-bottom:8px;color:var(--ok-text)"></i>Nenhuma troca pendente no momento.</div>';
+    return;
+  }
+
+  lista.innerHTML = trocasPendentes.map(t => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:14px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)">
+        <i class="ti ti-arrows-exchange" style="color:var(--gold);margin-right:4px"></i>
+        ${nomes[t.solicitante] || t.solicitante} quer trocar com você
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
+        Sábado deles: <strong style="color:var(--text)">${t.dia_sol} ${meses[t.mes_sol]} ${t.ano_sol}</strong> →
+        Seu sábado: <strong style="color:var(--text)">${t.dia_alvo} ${meses[t.mes_alvo]} ${t.ano_alvo}</strong>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="responderTroca('${t.id}', true)" style="flex:1;background:var(--gold);color:#1A1A18;border:none;border-radius:var(--rs);padding:8px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">✓ Aceitar</button>
+        <button onclick="responderTroca('${t.id}', false)" style="background:none;border:1px solid rgba(212,75,75,0.4);border-radius:var(--rs);padding:8px 14px;font-size:12px;color:var(--bad-text);font-family:inherit;cursor:pointer">✕ Recusar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function fecharTrocaPendente() {
+  document.getElementById('modal-troca-pendente').classList.remove('show');
+}
+
+async function responderTroca(idTroca, aceitar) {
+  const payload = {
+    action:     'responderTroca',
+    usuario:    usuarioLogado.slug,
+    senha_auth: usuarioLogado.senha,
+    id_troca:   idTroca,
+    aceitar,
+  };
+  try {
+    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (!json.ok) { alert('Erro: ' + (json.erro||'tente novamente')); return; }
+    // Remove da lista local
+    trocasPendentes = trocasPendentes.filter(t => t.id !== idTroca);
+    const badge = document.getElementById('badge-troca');
+    if (badge) {
+      if (!trocasPendentes.length) badge.remove();
+      else badge.textContent = trocasPendentes.length + ' troca' + (trocasPendentes.length > 1 ? 's' : '') + ' pendente' + (trocasPendentes.length > 1 ? 's' : '');
+    }
+    fecharTrocaPendente();
+    if (aceitar) {
+      alert('Troca aceita! As escalas foram atualizadas.');
+      // Recarrega escala do mês atual
+      await navEscala(0);
+    } else {
+      alert('Troca recusada.');
+    }
+  } catch(e) { alert('Erro: ' + e.message); }
+}
 // Dados em memória; persistidos no Sheets via Apps Script
 let acessosCache = null; // array de {ferramenta, login, senha, idx}
 
