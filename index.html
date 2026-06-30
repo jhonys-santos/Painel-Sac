@@ -802,6 +802,20 @@ function renderTudo(dados) {
         kpiCard('ti-chart-bar', 'Pesquisas',          ind.pesquisas || 0,     'neutral', '',             'esta semana') +
         kpiCard('ti-check',     'Testes Aprov.',      testesStr,              'neutral', '',             'aprovados') +
         kpiCard('ti-ticket',    'Tickets',            ind.tickets   || 0,     'neutral', '',             'resolvidos');
+    } else if (usuarioLogado.slug === 'gabrielle') {
+      const csat      = ind.csat;
+      const csatSp    = csat !== null && csat !== undefined ? (csat >= 95 ? 'ok' : 'bad') : 'neutral';
+      const csatStr   = csat !== null && csat !== undefined ? csat + '%' : '—';
+      const tmrPPFStr = ind.tmr_ppf > 0 ? fmtHoras(ind.tmr_ppf) : '—';
+      const tmrPPFSp  = ind.tmr_ppf > 0 && ind.tmr_ppf <= 1440 ? 'ok' : ind.tmr_ppf > 1440 ? 'bad' : 'neutral';
+      const meta      = ind.meta_auditoria || (periodo === 'semana' ? 30 : 120);
+      const auditSp   = (ind.auditorias||0) >= meta ? 'ok' : 'bad';
+      document.getElementById('kpi-grid').innerHTML =
+        kpiCard('ti-clock',     'TMT Ped. Atrasados', tmrPPFStr,        tmrPPFSp,  bdg(tmrPPFSp), 'Meta: &lt; 24h') +
+        kpiCard('ti-star',      'CSAT',        csatStr,                csatSp,    bdg(csatSp),   'Meta: &gt; 95%') +
+        kpiCard('ti-chart-bar', 'Pesquisas',   ind.pesquisas || 0,     'neutral', '',            'esta semana') +
+        kpiCard('ti-clipboard-check','Auditorias', (ind.auditorias||0) + ' / ' + meta, auditSp, bdg(auditSp), 'Meta: ' + meta + (periodo==='semana'?'/semana':'/mês')) +
+        kpiCard('ti-ticket',    'Tickets',     ind.tickets || 0,       'neutral', '',            'resolvidos');
     } else {
       document.getElementById('kpi-grid').innerHTML =
         kpiCard('ti-clock','TMR PPF+1',(ind.tmr_ppf||0) > 0 ? fmtHoras(ind.tmr_ppf) : '—', sp, bdg(sp),'Meta: &lt; 480 min') +
@@ -951,6 +965,13 @@ function renderPico(pico) {
 }
 
 function renderAudit(a) {
+  // Gabrielle não usa o card de "Auditoria de processos" — ela tem o card de Auditorias nos KPIs
+  if (usuarioLogado && usuarioLogado.slug === 'gabrielle') {
+    document.getElementById('audit-block').innerHTML = '';
+    document.getElementById('audit-block').style.display = 'none';
+    return;
+  }
+  document.getElementById('audit-block').style.display = '';
   const pct=a.pct||0, s=stAudit(pct);
   const cor=s==='ok'?'#3DAF72':s==='warn'?'#D49628':'#D44B4B';
   const corT=s==='ok'?'var(--ok-text)':s==='warn'?'var(--warn-text)':'var(--bad-text)';
@@ -1118,28 +1139,27 @@ function renderRV_Daniel(ind, block) {
 // TMT Pedidos Atrasados <24h→R$150 | TMT Erros de Envio <24h→R$50 | Auditoria >95%→R$50 | Máx R$250
 // Na planilha PPF: tmr_ppf = TMT Pedidos Atrasados
 // TMT Erros de Envio — não há coluna separada ainda; placeholder
+// ── RV Gabrielle ───────────────────────────────────────────────
+// TMT Ped. Atrasados < 24h → R$150 | Auditorias (meta mensal) → R$50 | Máx R$200
 function renderRV_Gabrielle(ind, block) {
-  const tmrPPF  = ind.tmr_ppf || 0;
-  const auditPct = (ind.audit || {}).pct || 0;
+  const tmrPPF = ind.tmr_ppf || 0;
 
   let pedVal = 0, pedS = 'bad';
-  const pedLbl = tmrPPF > 0 ? tmrPPF + ' min' : 'Sem dados';
+  const pedLbl = tmrPPF > 0 ? fmtHoras(tmrPPF) : 'Sem dados';
   if (tmrPPF > 0 && tmrPPF <= 24 * 60) { pedVal = 150; pedS = 'ok'; }
   else if (tmrPPF > 24 * 60) pedS = 'bad';
 
-  // TMT Erros de Envio — coluna não existe ainda
-  const envVal = 0, envS = 'bad', envLbl = 'Não configurado';
+  const auditorias    = ind.auditorias || 0;
+  const metaAuditoria = ind.meta_auditoria || 120; // meta mensal (30/semana × 4)
+  let audVal = 0, audS = 'bad';
+  const audLbl = auditorias + ' / ' + metaAuditoria;
+  if (auditorias >= metaAuditoria) { audVal = 50; audS = 'ok'; }
 
-  let audVal = 0, audS = auditPct > 95 ? 'ok' : (auditPct > 0 ? 'bad' : 'bad');
-  const audLbl = auditPct > 0 ? auditPct + '%' : 'Sem avaliação';
-  if (auditPct > 95) audVal = 50;
-
-  const total = pedVal + envVal + audVal;
-  const max   = 250;
+  const total = pedVal + audVal;
+  const max   = 200;
   rvRender(block, total, max, MESES[mesAtual], [
-    rvItem('TMT Ped. Atrasados', pedLbl,  pedVal, pedS,  'Meta: < 24h'),
-    rvItem('TMT Erros de Envio', envLbl,  envVal, envS,  'Meta: < 24h'),
-    rvItem('Auditoria',          audLbl,  audVal, audS,  'Meta: > 95%'),
+    rvItem('TMT Ped. Atrasados', pedLbl, pedVal, pedS, 'Meta: < 24h'),
+    rvItem('Auditorias',         audLbl, audVal, audS, 'Meta: ' + metaAuditoria + '/mês'),
   ]);
 }
 
