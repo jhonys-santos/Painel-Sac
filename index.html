@@ -786,7 +786,7 @@ function renderTudo(dados) {
     const csatStr2 = (ind.csat !== null && ind.csat !== undefined) ? ind.csat + '%' : '—';
     document.getElementById('kpi-grid').innerHTML =
       kpiCard('ti-clock','TMA',tmaStr,s1,bdg(s1),'Meta: &lt; 30 min') +
-      kpiCard('ti-star','CSAT',csatStr2,s2,bdg(s2),'Meta: &gt; 95%') +
+      kpiCard('ti-star','CSAT',csatStr2,s2,bdg(s2),'Meta: ≥ 95%') +
       kpiCard('ti-refresh','TMR Refab.',fmtHoras(ind.tmr_refab||0),s3,bdg(s3),'Meta: &lt; 84h') +
       kpiCard('ti-headset','Atendimentos',ind.atendimentos||0,'neutral','',lbl) +
       kpiCard('ti-chart-bar','Pesquisas',ind.pesquisas||0,'neutral','',lbl) +
@@ -806,7 +806,7 @@ function renderTudo(dados) {
       document.getElementById('kpi-grid').innerHTML =
         kpiCard('ti-clock',     'TMT Ped. Atrasados', tmrPPFStr,              tmrPPFSp,  bdg(tmrPPFSp),  'Meta: &lt; 24h') +
         kpiCard('ti-clock',     'TMA Aprov. Logo',    tmaLogoStr,             tmaLogoSp, bdg(tmaLogoSp), 'Meta: &lt; 30 min') +
-        kpiCard('ti-star',      'CSAT',               csatStr,                csatSp,    bdg(csatSp),    'Meta: &gt; 95%') +
+        kpiCard('ti-star',      'CSAT',               csatStr,                csatSp,    bdg(csatSp),    'Meta: ≥ 95%') +
         kpiCard('ti-chart-bar', 'Pesquisas',          ind.pesquisas || 0,     'neutral', '',             'esta semana') +
         kpiCard('ti-check',     'Testes Aprov.',      testesStr,              'neutral', '',             'aprovados') +
         kpiCard('ti-ticket',    'Tickets',            ind.tickets   || 0,     'neutral', '',             'resolvidos');
@@ -820,7 +820,7 @@ function renderTudo(dados) {
       const auditSp   = (ind.auditorias||0) >= meta ? 'ok' : 'bad';
       document.getElementById('kpi-grid').innerHTML =
         kpiCard('ti-clock',     'TMT Ped. Atrasados', tmrPPFStr,        tmrPPFSp,  bdg(tmrPPFSp), 'Meta: &lt; 24h') +
-        kpiCard('ti-star',      'CSAT',        csatStr,                csatSp,    bdg(csatSp),   'Meta: &gt; 95%') +
+        kpiCard('ti-star',      'CSAT',        csatStr,                csatSp,    bdg(csatSp),   'Meta: ≥ 95%') +
         kpiCard('ti-chart-bar', 'Pesquisas',   ind.pesquisas || 0,     'neutral', '',            'esta semana') +
         kpiCard('ti-clipboard-check','Auditorias', (ind.auditorias||0) + ' / ' + meta, auditSp, bdg(auditSp), 'Meta: ' + meta + (periodo==='semana'?'/semana':'/mês')) +
         kpiCard('ti-ticket',    'Tickets',     ind.tickets || 0,       'neutral', '',            'resolvidos');
@@ -1092,12 +1092,12 @@ function renderRV_SAC(ind, block) {
   else if (tma >= 15 && tma <= 30){ tmaVal = 100; tmaS = 'ok';  tmaLbl = tma + ' min  (15–30 min)'; }
   else if (tma > 30)             { tmaVal = 0;   tmaS = 'bad';  tmaLbl = tma + ' min  (> 30 min)'; }
 
-  let csatVal = 0, csatS = csat > 95 ? 'ok' : 'bad';
-  if (csat > 95) csatVal = 75;
+  let csatVal = 0, csatS = csat >= 95 ? 'ok' : 'bad';
+  if (csat >= 95) csatVal = 75;
 
-  let audVal = 0, audS = auditPct > 90 ? 'ok' : (auditPct > 0 ? 'bad' : 'bad');
+  let audVal = 0, audS = auditPct >= 90 ? 'ok' : (auditPct > 0 ? 'bad' : 'bad');
   const audLbl = auditPct > 0 ? auditPct + '%' : 'Sem avaliação';
-  if (auditPct > 90) audVal = 50;
+  if (auditPct >= 90) audVal = 50;
 
   let tmrVal = 0, tmrS = 'bad';
   const tmrLbl = tmrRefab > 0 ? fmtHoras(tmrRefab) : 'Sem dados';
@@ -1108,8 +1108,8 @@ function renderRV_SAC(ind, block) {
   const max   = 325;
   rvRender(block, total, max, MESES[mesAtual], [
     rvItem('TMA',        tmaLbl,                        tmaVal,  tmaS,  'Meta: < 30 min'),
-    rvItem('CSAT',       csat + '%',                    csatVal, csatS, 'Meta: > 95%'),
-    rvItem('Auditoria',  audLbl,                        audVal,  audS,  'Meta: > 90%'),
+    rvItem('CSAT',       csat + '%',                    csatVal, csatS, 'Meta: ≥ 95%'),
+    rvItem('Auditoria',  audLbl,                        audVal,  audS,  'Meta: ≥ 90%'),
     rvItem('TMR Refab.', tmrLbl,                        tmrVal,  tmrS,  'Meta: < 84h'),
   ]);
 }
@@ -1127,9 +1127,9 @@ function renderRV_Daniel(ind, block) {
   if (tmrPPF > 0 && tmrPPF <= 1440) { pedVal = 150; pedS = 'ok'; }
   else if (tmrPPF > 1440) pedS = 'bad';
 
-  // CSAT: meta > 95%
-  let csatVal = 0, csatS = csat > 95 ? 'ok' : 'bad';
-  if (csat > 95) csatVal = 75;
+  // CSAT: meta ≥ 95%
+  let csatVal = 0, csatS = csat >= 95 ? 'ok' : 'bad';
+  if (csat >= 95) csatVal = 75;
   const csatLbl = csat > 0 ? csat + '%' : 'Sem dados';
 
   // TMA Aprovação Logo: meta ≤ 30 min
@@ -1142,7 +1142,7 @@ function renderRV_Daniel(ind, block) {
   const max   = 275;
   rvRender(block, total, max, MESES[mesAtual], [
     rvItem('TMT Ped. Atrasados', pedLbl,  pedVal,  pedS,  'Meta: < 24h'),
-    rvItem('CSAT',               csatLbl, csatVal, csatS, 'Meta: > 95%'),
+    rvItem('CSAT',               csatLbl, csatVal, csatS, 'Meta: ≥ 95%'),
     rvItem('TMA Aprov. Logo',    logoLbl, logoVal, logoS, 'Meta: ≤ 30 min'),
   ]);
 }
